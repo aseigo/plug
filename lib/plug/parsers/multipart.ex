@@ -10,11 +10,17 @@ defmodule Plug.Parsers.MULTIPART do
     * `:length` - sets the maximum number of bytes to read from the request,
       defaults to 8_000_000 bytes
 
+      Passing {:stateful, module, function, args} as the length argument
+      results in the conn object for the request being passed as the first
+      parameter (before the predefined args), allowing the length to be
+      determined statefully with respect to the conn object.
+
     * `:read_length` - sets the amount of bytes to read at one time from the
       underlying socket to fill the chunk, defaults to 1_000_000 bytes
 
     * `:read_timeout` - sets the timeout for each socket read, defaults to
       15_000ms
+
 
   So by default, `Plug.Parsers` will read 1_000_000 bytes at a time from the
   socket with an overall limit of 8_000_000 bytes.
@@ -105,6 +111,10 @@ defmodule Plug.Parsers.MULTIPART do
   end
 
   ## Multipart
+  defp parse_multipart(conn, {{:stateful, module, fun, args}, header_opts, opts}) do
+    limit = apply(module, fun, [conn | args])
+    parse_multipart(conn, {limit, header_opts, opts})
+  end
 
   defp parse_multipart(conn, {{module, fun, args}, header_opts, opts}) do
     # TODO: Remove me on 2.0.
